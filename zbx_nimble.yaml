@@ -1,0 +1,209 @@
+zabbix_export:
+  version: '6.2'
+  date: '2023-02-14T10:32:53Z'
+  template_groups:
+    -
+      uuid: 7c2cb727f85b492d88cd56e17127c64d
+      name: Templates/SAN
+  templates:
+    -
+      uuid: c54295a2e8a94a1ab53035ef67f5f109
+      template: 'Nimble API discover template'
+      name: 'Nimble API discover template'
+      description: '#https://infosight.hpe.com/InfoSight/media/cms/active/public/pubs_REST_API_Reference_NOS_51x.whz/tfd1480349056195.html'
+      templates:
+        -
+          name: 'ICMP Ping'
+      groups:
+        -
+          name: Templates/SAN
+      discovery_rules:
+        -
+          uuid: f3db96f9fab14466854c7ee2a9bc5f12
+          name: 'Discovery disks'
+          type: EXTERNAL
+          key: 'nimble.py[{$NIMBLENAME},discoverdisk,0]'
+          delay: 2h
+          lifetime: 7d
+          item_prototypes:
+            -
+              uuid: 72336ec0a1cb4fe186fc58a140e0faec
+              name: 'Disk from {#ARRAYNAME}  slot {#SLOT}'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},diskstatus,{#SLOT}]'
+              delay: 8h
+              trends: '0'
+              value_type: TEXT
+              description: |
+                Location: {#ARRAYNAME}
+                Type disk: {#TYPE}
+                S/N: {#SERIAL}
+                Model: {#MODEL}
+              tags:
+                -
+                  tag: DISK
+              trigger_prototypes:
+                -
+                  uuid: 845a2b5f56a8456ba340fa674c4a4835
+                  expression: 'last(/Nimble API discover template/nimble.py[{$NIMBLENAME},diskstatus,{#SLOT}])<>"okay"'
+                  name: 'Disk from {#ARRAYNAME}  slot {#SLOT} is NOT OK'
+                  priority: HIGH
+        -
+          uuid: 1dce6d023697471bb2fa0f47abe42633
+          name: 'Discovery fc'
+          type: EXTERNAL
+          key: 'nimble.py[{$NIMBLENAME},discoverfc,fc]'
+          delay: 2h
+          description: totalRows
+          item_prototypes:
+            -
+              uuid: 573a48445cc849ca92df952201758973
+              name: 'Interface {#FCSLOT} {#FCARRAYNAME} {#FCCONTR} {#FCPORTSNAME}'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},fcstatus,{#FCSLOT}]'
+              delay: 3m
+              trends: '0'
+              value_type: TEXT
+              tags:
+                -
+                  tag: FC
+              trigger_prototypes:
+                -
+                  uuid: 67dcac9ed461437bab16970aa03fcd68
+                  expression: 'last(/Nimble API discover template/nimble.py[{$NIMBLENAME},fcstatus,{#FCSLOT}])<>"plat_fc_link_status_up"'
+                  name: 'Interface {#FCSLOT} {#FCARRAYNAME} {#FCCONTR} {#FCPORTSNAME} is not connected'
+                  priority: HIGH
+        -
+          uuid: dc56ff07d85744ccbf93f2b139a05455
+          name: 'Diskovery net'
+          type: EXTERNAL
+          key: 'nimble.py[{$NIMBLENAME},discovernet,fc]'
+          delay: 2h
+          item_prototypes:
+            -
+              uuid: f5647f3925094539ae2e73ed4e2acc92
+              name: 'Interface speed {#NETSLOT} {#NETARRAYNAME} {#NETCONTR} {#NETPORTSNAME}'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},netlinkspeed,{#NETSLOT}]'
+              delay: 10m
+              trends: '0'
+              value_type: TEXT
+              tags:
+                -
+                  tag: NET-Speed
+            -
+              uuid: 6b6c2988f7894a6aadb6d5fef8fca98b
+              name: 'Interface status {#NETSLOT} {#NETARRAYNAME} {#NETCONTR} {#NETPORTSNAME}'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},netstatus,{#NETSLOT}]'
+              trends: '0'
+              value_type: TEXT
+              tags:
+                -
+                  tag: NET-Status
+              trigger_prototypes:
+                -
+                  uuid: f7c8e3f130274e02a7494e0aa326fc4c
+                  expression: 'last(/Nimble API discover template/nimble.py[{$NIMBLENAME},netstatus,{#NETSLOT}])<>"link_status_up"'
+                  name: 'Interface status {#NETSLOT} {#NETARRAYNAME} {#NETCONTR} {#NETPORTSNAME}'
+                  priority: HIGH
+        -
+          uuid: 35ff730f66cb43f4b553cd71d41a2ca0
+          name: 'Diskovery pools'
+          type: EXTERNAL
+          key: 'nimble.py[{$NIMBLENAME},discoverpools,sh]'
+          delay: 2h
+          item_prototypes:
+            -
+              uuid: 67ac7eadd1534369a9f09db0c8e29470
+              name: 'Shelve N-ISANA-{#POOLARRAYNAME} free space'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},poolsfreespace,{#POOLSLOT}]'
+              delay: 60m
+              trends: '0'
+              value_type: TEXT
+              description: 'Capacity: {#POOLCAPACITY} Tb'
+              tags:
+                -
+                  tag: POOL
+              trigger_prototypes:
+                -
+                  uuid: b22f185dfd7b4538a4abecf455134cc9
+                  expression: 'last(/Nimble API discover template/nimble.py[{$NIMBLENAME},poolsfreespace,{#POOLSLOT}])<10'
+                  name: 'Shelve N-ISANA-{#POOLARRAYNAME} free space less than 10 Tb'
+                  priority: HIGH
+            -
+              uuid: 69a2f55c07d241ec870b0f17931f7d18
+              name: 'Shelve N-ISANA-{#POOLARRAYNAME} usage'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},poolsusage,{#POOLSLOT}]'
+              delay: 60m
+              trends: '0'
+              value_type: TEXT
+              description: '{#POOLCAPACITY} Tb'
+              tags:
+                -
+                  tag: POOL
+        -
+          uuid: e90638cfc98f4129a76acb01d543538f
+          name: 'Diskovery shelves'
+          type: EXTERNAL
+          key: 'nimble.py[{$NIMBLENAME},discovershelve,sh]'
+          delay: 2h
+          item_prototypes:
+            -
+              uuid: 38bd501db462413c89a4fc45661621cf
+              name: 'Shelve {#SHARRAYNAME} fan status'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},shfanstatus,{#SHSLOT}]'
+              trends: '0'
+              value_type: TEXT
+              tags:
+                -
+                  tag: FAN
+              trigger_prototypes:
+                -
+                  uuid: c3ea1ddd76e045109ada794fe9109821
+                  expression: 'last(/Nimble API discover template/nimble.py[{$NIMBLENAME},shfanstatus,{#SHSLOT}])<>"OK"'
+                  name: 'Shelve {#SHARRAYNAME} fan status is not OK'
+                  priority: HIGH
+            -
+              uuid: 9772187e657e4dd18c228e1ab0acd702
+              name: 'Shelve {#SHARRAYNAME} power status'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},shpsustatus,{#SHSLOT}]'
+              trends: '0'
+              value_type: TEXT
+              tags:
+                -
+                  tag: POWER
+              trigger_prototypes:
+                -
+                  uuid: 16496957dc744d2f94a829e802785fb3
+                  expression: 'last(/Nimble API discover template/nimble.py[{$NIMBLENAME},shpsustatus,{#SHSLOT}])<>"OK"'
+                  name: 'Shelve {#SHARRAYNAME} power status'
+                  priority: HIGH
+            -
+              uuid: d3808c3f706a4268a1024b09bab054d7
+              name: 'Shelve {#SHARRAYNAME} temperature status'
+              type: EXTERNAL
+              key: 'nimble.py[{$NIMBLENAME},shtempstatus,{#SHSLOT}]'
+              delay: 10m
+              trends: '0'
+              value_type: TEXT
+              tags:
+                -
+                  tag: TEMPERATURE
+              trigger_prototypes:
+                -
+                  uuid: fd0f5013fe2d415c8ace30e223e207cd
+                  expression: 'last(/Nimble API discover template/nimble.py[{$NIMBLENAME},shtempstatus,{#SHSLOT}])<>"OK"'
+                  name: 'Shelve {#SHARRAYNAME} temperature status is not OK'
+                  priority: HIGH
+      macros:
+        -
+          macro: '{$ARG2}'
+          value: 0-100
+        -
+          macro: '{$NIMBLENAME}'
+          value: 'https://your_nimle_dns_name:5392/v1'
